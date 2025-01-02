@@ -1,5 +1,5 @@
 ### 프로젝트 패키지 구성
-
+```
 server-java/
 ├── .gitignore                # Git에서 추적하지 않을 파일 및 폴더 설정
 ├── build.gradle              # Gradle 빌드 설정 파일
@@ -23,3 +23,4 @@ server-java/
 │   │       └── application.properties  # DB, API, 로깅 등 설정
 ├── .github/                   # GitHub 관련 설정 (Pull Request 템플릿 등)
 └── README.md                   # 프로젝트 설명
+```
