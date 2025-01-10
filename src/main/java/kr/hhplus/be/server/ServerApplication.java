@@ -2,8 +2,10 @@ package kr.hhplus.be.server;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "kr.hhplus.be")
+@EnableJpaRepositories(basePackages = "kr.hhplus.be.server.domain.repository")
 public class ServerApplication {
 
 	public static void main(String[] args) {

@@ -43,9 +43,20 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 	testImplementation("org.testcontainers:junit-jupiter")
 	testImplementation("org.testcontainers:mysql")
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	compileOnly("org.projectlombok:lombok:1.18.28") // 최신 버전 확인
+	annotationProcessor("org.projectlombok:lombok:1.18.28")
+
+	implementation("org.springdoc:springdoc-openapi-ui:1.7.0")
+	implementation("org.springdoc:springdoc-openapi-data-rest:1.7.0")
 }
 
+tasks.withType<JavaCompile> {
+	options.annotationProcessorPath = configurations["annotationProcessor"]
+}
+tasks.withType<Test> {
+	useJUnitPlatform()
+	systemProperty("spring.profiles.active", "test")
+}
 tasks.withType<Test> {
 	useJUnitPlatform()
 	systemProperty("user.timezone", "UTC")
