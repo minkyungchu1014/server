@@ -1,13 +1,6 @@
 ### **커밋 링크**
-<!-- 
-
-ERD 설계 자료 제출 : https://www.notion.so/ERD-16f72d0bc335804d9693c622c810b51a
-
-API 명세 : https://www.notion.so/API-16f72d0bc33580d4ae91db8176e29482
-
-Mock API (Postman이용) : https://www.notion.so/Mock-API-16f72d0bc33580af9084e457f773578d
-
-프로젝트 패키지 구성 : README.md
+<!--
+동시성 제어 방안 분석 및 구현 보고서 : README.md
 
 서버 
 -->
