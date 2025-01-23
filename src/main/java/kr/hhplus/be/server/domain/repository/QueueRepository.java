@@ -2,8 +2,12 @@ package kr.hhplus.be.server.domain.repository;
 
 import kr.hhplus.be.server.domain.models.Queue;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.awt.print.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -43,5 +47,36 @@ public interface QueueRepository extends JpaRepository<Queue, Long>, QueueReposi
      */
     List<Queue> findByStatusAndExpiresAtBefore(String status, LocalDateTime currentTime);
 
-    boolean existsByTokenIdAndStatus(String token, String active);
+    /**
+     * 토큰 ID와 상태 값으로 대기열 항목 존재 여부 확인
+     * @param tokenId 토큰 ID
+     * @param status 상태 값
+     * @return 존재 여부
+     */
+    boolean existsByTokenIdAndStatus(String tokenId, String status);
+
+    boolean existsByTokenId(String tokenId);
+
+    /**
+     * 사용자 ID로 대기열 삭제
+     * @param userId 사용자 ID
+     */
+    void deleteByUserId(Long userId);
+
+    /**
+     * 사용자 ID로 대기열 항목 수 조회
+     * @param userId 사용자 ID
+     * @return 대기열 항목 수
+     */
+    long countByUserId(Long userId);
+    @Query("SELECT q.tokenId FROM Queue q WHERE q.status = 'WAITING' ORDER BY q.createdAt ASC")
+    List<String> findTokensByStatusWaiting(Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE Queue q SET q.status = :newStatus, q.expiresAt = :expiresAt WHERE q.tokenId = :tokenId")
+    void updateStatusAndExpiresAtForWaitingTokens(@Param("tokenId") String tokenId,
+                                                  @Param("newStatus") String newStatus,
+                                                  @Param("expiresAt") LocalDateTime expiresAt);
 }
+
+

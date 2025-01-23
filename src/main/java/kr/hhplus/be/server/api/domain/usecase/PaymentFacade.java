@@ -2,6 +2,7 @@ package kr.hhplus.be.server.api.domain.usecase;
 
 import kr.hhplus.be.server.domain.service.PaymentService;
 import kr.hhplus.be.server.domain.service.ReservationService;
+import kr.hhplus.be.server.domain.service.SeatService;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,7 +16,7 @@ public class PaymentFacade {
     private final PaymentService paymentService;
     private final ReservationService reservationService;
 
-    public PaymentFacade(PaymentService paymentService, ReservationService reservationService) {
+    public PaymentFacade(PaymentService paymentService, ReservationService reservationService, SeatService seatService) {
         this.paymentService = paymentService;
         this.reservationService = reservationService;
     }
@@ -27,10 +28,6 @@ public class PaymentFacade {
      * @throws IllegalArgumentException 결제가 이미 진행 중일 경우 예외 발생
      */
     public void processPayment(Long userId, Long reservationId) {
-        // 결제 상태 확인
-        if (paymentService.isPaymentPending(reservationId)) {
-            throw new IllegalArgumentException("Payment is already in progress.");
-        }
 
         // 결제 처리
         paymentService.processPayment(userId, reservationId);

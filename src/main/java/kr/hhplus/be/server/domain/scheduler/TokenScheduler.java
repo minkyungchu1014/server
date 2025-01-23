@@ -13,19 +13,12 @@ public class TokenScheduler {
         this.tokenService = tokenService;
     }
 
-    /**
-     * 1분마다 WAITING 상태의 토큰을 ACTIVE로 변경 (만료 시간 10분 후로 설정)
-     */
-    @Scheduled(fixedRate = 60000) // 매 1분 실행
-    public void activateTokens() {
-        tokenService.activateTokens(10);
-    }
 
-    /**c
-     * 1분마다 만료된 토큰 삭제
+    /** 토큰 테이블에서
+     * 1분마다 만료된 토큰 삭제(토큰 보관 주기 : 1년)
      */
-    @Scheduled(fixedRate = 60000) // 매 1분 실행
-    public void cleanExpiredTokens() {
-        tokenService.expireTokens();
+    @Scheduled(fixedRate = 60000) //
+    public void deleteByExpiresAtBefore() {
+        tokenService.deleteByExpiresAtBefore();
     }
 }

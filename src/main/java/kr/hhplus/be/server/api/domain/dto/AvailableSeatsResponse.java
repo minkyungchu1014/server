@@ -9,10 +9,21 @@ import lombok.Setter;
 @Getter
 @Setter
 public class AvailableSeatsResponse {
-    private Long id;
+    private Long seatId;
     private Long concertScheduleId;
-    private Long seatNumber;
+    private Integer seatNumber;
+    private Long price;
+    private String concertName;
+    private String venue;
+    private String organizer;
 
-    public AvailableSeatsResponse(Long id, Integer seatNumber, Long price) {
+    public AvailableSeatsResponse(Long seatId, Long concertScheduleId, Integer seatNumber, Long price, String concertName, String venue, String organizer) {
+        this.seatId = seatId;
+        this.concertScheduleId = concertScheduleId;
+        this.seatNumber = seatNumber;
+        this.price = price;
+        this.concertName = concertName;
+        this.venue = venue;
+        this.organizer = organizer;
     }
 }

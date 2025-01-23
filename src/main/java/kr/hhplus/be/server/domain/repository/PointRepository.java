@@ -1,46 +1,39 @@
 package kr.hhplus.be.server.domain.repository;
 
+import jakarta.persistence.LockModeType;
+import kr.hhplus.be.server.domain.models.Point;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
+/**
+ * PointRepository
+ * - JPA를 사용한 포인트 데이터 관리.
+ */
 @Repository
-public class PointRepository {
+public interface PointRepository extends JpaRepository<Point, Long> {
 
-    private final Map<Long, Long> userPoints = new HashMap<>();
-    private final Map<Long, List<PointHistory>> pointHistories = new HashMap<>();
+    // 비관적 락을 사용하여 특정 사용자의 포인트 조회
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Point p WHERE p.user.id = :userId")
+    Optional<Point> findPointWithLock(@Param("userId") Long userId);
 
-    public Long getPoint(Long userId) {
-        return userPoints.getOrDefault(userId, 0L);
-    }
+    // 특정 사용자의 현재 포인트 잔액을 조회
+    @Query("SELECT p.total FROM Point p WHERE p.user.id = :userId")
+    Long getPoint(@Param("userId") Long userId);
 
-    public void updatePoint(Long userId, Long newPoint) {
-        userPoints.put(userId, newPoint);
-    }
+    // 포인트 거래 기록 추가
+    @Query(value = "INSERT INTO point_history (user_id, amount, type, description, created_at) " +
+            "VALUES (:userId, :amount, :type, :description, :createdAt)", nativeQuery = true)
+    void addPointHistory(@Param("userId") Long userId,
+                         @Param("amount") Long amount,
+                         @Param("type") String type,
+                         @Param("description") String description,
+                         @Param("createdAt") LocalDateTime createdAt);
 
-    public void addPointHistory(Long userId, Long amount, String type, String description) {
-        PointHistory history = new PointHistory(amount, type, description);
-        pointHistories.computeIfAbsent(userId, k -> new ArrayList<>()).add(history);
-    }
-
-
-    private static class PointHistory {
-        private final Long amount;
-        private final String type;
-        private final String description;
-
-        public PointHistory(Long amount, String type, String description) {
-            this.amount = amount;
-            this.type = type;
-            this.description = description;
-        }
-
-        @Override
-        public String toString() {
-            return "Type: " + type + ", Amount: " + amount + ", Description: " + description;
-        }
-    }
 }

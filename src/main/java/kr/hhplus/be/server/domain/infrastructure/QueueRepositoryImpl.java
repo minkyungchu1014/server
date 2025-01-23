@@ -5,6 +5,8 @@ import jakarta.persistence.PersistenceContext;
 import kr.hhplus.be.server.domain.repository.QueueRepositoryCustom;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+
 /**
  * QueueRepositoryImpl
  * - 커스텀 로직을 구현한 클래스.
@@ -51,5 +53,33 @@ public class QueueRepositoryImpl implements QueueRepositoryCustom {
         return entityManager.createQuery(query, Integer.class)
                 .setParameter("status", status)
                 .getSingleResult();
+    }
+
+    @Override
+    public long getQueuePosition(String tokenId) {
+        String query = """
+            SELECT COUNT(q)
+            FROM Queue q 
+            WHERE q.status = 'WAITING' 
+            AND q.createdAt < (SELECT q2.createdAt FROM Queue q2 WHERE q2.tokenId = :tokenId)
+            """;
+
+        return entityManager.createQuery(query, Long.class)
+                .setParameter("tokenId", tokenId)
+                .getSingleResult();
+    }
+
+    @Override
+    public void updateExpiresAt(String token, LocalDateTime expiresAt) {
+        String query = """
+            UPDATE Queue q
+            SET  q.expiresAt = :expiresAt
+            WHERE q.tokenId = :token
+        """;
+
+        entityManager.createQuery(query)
+                .setParameter("expiresAt", expiresAt)
+                .setParameter("token", token)
+                .executeUpdate();
     }
 }

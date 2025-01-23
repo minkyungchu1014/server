@@ -1,6 +1,5 @@
 package kr.hhplus.be.server.api.domain.controller;
 
-import jakarta.transaction.Transactional;
 import kr.hhplus.be.server.api.domain.dto.AvailableDateResponse;
 import kr.hhplus.be.server.api.domain.dto.AvailableSeatsResponse;
 import kr.hhplus.be.server.api.domain.usecase.ReservationFacade;
@@ -8,7 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -26,7 +24,7 @@ public class ReservationController {
      * @return 예약 가능한 날짜와 콘서트 목록 리스트
      */
     @GetMapping("/dates")
-    public ResponseEntity<List<AvailableDateResponse>> getAvailableDates() {
+    public ResponseEntity<List<AvailableDateResponse>> getAvailableDates(@RequestHeader("Authorization") String token) {
         return ResponseEntity.ok(reservationFacade.getAvailableDates());
     }
 
@@ -36,7 +34,7 @@ public class ReservationController {
      * @return 예약 가능한 좌석 정보 리스트
      */
     @GetMapping("/seats")
-    public ResponseEntity<List<AvailableSeatsResponse>> getAvailableSeatsByDate(@RequestParam String date) {
+    public ResponseEntity<List<AvailableSeatsResponse>> getAvailableSeatsByDate(@RequestHeader("Authorization") String token, @RequestParam String date) {
         return ResponseEntity.ok(reservationFacade.getAvailableSeatsByDate(date));
     }
 
@@ -48,9 +46,9 @@ public class ReservationController {
      * @return 예약 성공 메시지
      */
     @PostMapping("/reserve")
-    public ResponseEntity<String> reserveSeat(@RequestParam Long userId, @RequestParam Long seatId) {
+    public ResponseEntity<String> reserveSeat(@RequestHeader("Authorization") String token, @RequestParam Long userId, @RequestParam Long seatId) {
         try {
-            reservationFacade.reserveSeat(userId, seatId);
+            reservationFacade.reserveSeat(token, userId, seatId);
             return ResponseEntity.ok("예약 성공");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

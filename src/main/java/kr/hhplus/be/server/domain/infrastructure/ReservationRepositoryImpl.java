@@ -20,21 +20,6 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
     @PersistenceContext
     private EntityManager entityManager;
 
-    /**
-     * 사용자 ID와 좌석 ID를 기반으로 예약 생성.
-     * @param userId 사용자 ID
-     * @param seatId 좌석 ID
-     */
-    @Override
-    public void reserveSeat(Long userId, Long seatId) {
-        Reservation reservation = new Reservation();
-        reservation.setUserId(userId);
-        reservation.setSeatId(seatId);
-        reservation.setStatus("RESERVED");
-        reservation.setCreatedAt(LocalDateTime.now());
-        reservation.setUpdatedAt(LocalDateTime.now());
-        entityManager.persist(reservation);
-    }
 
     /**
      * 예약 취소.

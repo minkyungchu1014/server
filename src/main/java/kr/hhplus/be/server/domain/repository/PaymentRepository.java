@@ -2,7 +2,6 @@ package kr.hhplus.be.server.domain.repository;
 
 import kr.hhplus.be.server.domain.models.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -32,6 +31,5 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, Payment
      */
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Payment p WHERE p.reservationId = :reservationId AND p.status = :status")
     boolean existsByReservationIdAndStatus(@Param("reservationId") Long reservationId, @Param("status") String status);
-
 
 }

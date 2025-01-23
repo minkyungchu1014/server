@@ -1,11 +1,16 @@
 package kr.hhplus.be.server.domain.models;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 /**
  * Point: 사용자별 포인트 잔액 관리 엔티티.
  */
+@Getter
+@Setter
 @Entity
 @Table(name = "point")
 public class Point {
@@ -26,6 +31,7 @@ public class Point {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt; // 마지막 수정 시간
+
 
     @PrePersist
     protected void onCreate() {

@@ -1,8 +1,11 @@
 package kr.hhplus.be.server.domain.repository;
 
+import jakarta.persistence.LockModeType;
 import kr.hhplus.be.server.domain.models.Reservation;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -51,11 +54,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
      * @return 좌석 ID
      */
     Optional<Reservation> findById(Long id);
-    /**
-     * 예약 상태를 업데이트합니다.
-     * @param id 예약 ID
-     * @param status 새로운 상태
-     * @return 업데이트된 레코드 수
-     */
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT count(*) FROM Reservation r WHERE r.seatId = :seatId")
+    Optional<Reservation> findReservationWithLock(@Param("seatId") Long seatId);
+
+    Optional<Reservation> findBySeatId(Long seatId);
 }

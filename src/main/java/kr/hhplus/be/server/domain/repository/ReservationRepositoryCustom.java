@@ -1,10 +1,11 @@
 package kr.hhplus.be.server.domain.repository;
 
+import kr.hhplus.be.server.domain.models.Reservation;
+import org.springframework.data.jpa.repository.Modifying;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import kr.hhplus.be.server.domain.models.Reservation;
-import org.springframework.data.jpa.repository.Modifying;
 
 /**
  * ReservationRepositoryCustom
@@ -12,12 +13,6 @@ import org.springframework.data.jpa.repository.Modifying;
  */
 public interface ReservationRepositoryCustom {
 
-    /**
-     * 사용자 ID와 좌석 ID를 기반으로 예약 생성.
-     * @param userId 사용자 ID
-     * @param seatId 좌석 ID
-     */
-    void reserveSeat(Long userId, Long seatId);
 
     /**
      * 예약 취소.

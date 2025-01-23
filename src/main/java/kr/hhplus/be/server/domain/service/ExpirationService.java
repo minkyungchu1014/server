@@ -2,8 +2,6 @@ package kr.hhplus.be.server.domain.service;
 
 import jakarta.transaction.Transactional;
 import kr.hhplus.be.server.domain.models.Queue;
-import kr.hhplus.be.server.domain.models.Reservation;
-import kr.hhplus.be.server.domain.models.Seat;
 import kr.hhplus.be.server.domain.repository.*;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +15,6 @@ public class ExpirationService {
     private final SeatRepository seatRepository;
     private final QueueRepository queueRepository;
     private final PaymentRepository paymentRepository;
-    private final TokenRepository tokenRepository;
     public ExpirationService(ReservationRepository reservationRepository,
                              SeatRepository seatRepository,
                              QueueRepository queueRepository, PaymentRepository paymentRepository, TokenRepository tokenRepository) {
@@ -25,7 +22,6 @@ public class ExpirationService {
         this.seatRepository = seatRepository;
         this.queueRepository = queueRepository;
         this.paymentRepository = paymentRepository;
-        this.tokenRepository = tokenRepository;
     }
 
     /**
@@ -51,7 +47,7 @@ public class ExpirationService {
             seatRepository.updateIsReservedFalseAndReservedByEmptyByUserId(token.getUserId());
 
             // 2. 토큰 삭제
-            queueRepository.delete(token);
+            queueRepository.deleteByUserId(token.getUserId());
         }
     }
 }

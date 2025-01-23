@@ -1,11 +1,16 @@
 package kr.hhplus.be.server.domain.models;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 /**
  * PointHistory: 포인트 변경 내역 기록 엔티티.
  */
+@Getter
+@Setter
 @Entity
 @Table(name = "point_history")
 public class PointHistory {
@@ -14,9 +19,8 @@ public class PointHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private Point userId; // 각 PointHistory는 Point와 연결됨
+    private Long userId; // 각 PointHistory는 Point와 연결됨
 
     @Column(nullable = false)
     private Long amount; // 변경된 포인트 금액 (양수 또는 음수)
