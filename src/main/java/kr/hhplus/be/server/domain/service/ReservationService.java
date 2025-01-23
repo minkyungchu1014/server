@@ -108,11 +108,6 @@ public class ReservationService {
         // 해당 스케줄 ID들로 예약 가능한 좌석 조회
         return seatRepository.findAvailableSeatsByScheduleIds(scheduleIds);
     }
-    // 특정 날짜의 예약 가능한 좌석 ID 리스트 조회
-    //public List<Long> getAvailableSeats(String date) {
-    //    LocalDate reservationDate = LocalDate.parse(date);
-    //    return seatRepository.findIdByDate(reservationDate);
-    //}
 
     // 좌석 예약 여부 확인
     public boolean isSeatReserved(Long seatId) {

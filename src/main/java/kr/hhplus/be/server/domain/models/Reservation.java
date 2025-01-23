@@ -1,15 +1,17 @@
 package kr.hhplus.be.server.domain.models;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
+@Builder
 @Getter
 @Setter
 @Entity
 @Table(name = "reservation")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Reservation {
 
     @Id
@@ -37,6 +39,7 @@ public class Reservation {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -48,4 +51,12 @@ public class Reservation {
         this.updatedAt = LocalDateTime.now();
     }
 
+    @Builder
+    public Reservation(Long userId, Long seatId, Long concertScheduleId, String status, LocalDateTime expiresAt) {
+        this.userId = userId;
+        this.seatId = seatId;
+        this.concertScheduleId = concertScheduleId;
+        this.status = status;
+        this.expiresAt = expiresAt;
+    }
 }

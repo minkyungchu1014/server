@@ -20,12 +20,13 @@ public class QueueService {
     private final QueueRepository queueRepository;
 
     // 생성자 주입을 통해 queueRepository 제공받음
-    public QueueService(QueueRepository queueRepository, PointRepository pointRepository, QueueRepository queueRepository1) {
-        this.queueRepository = queueRepository1;
+    public QueueService(QueueRepository queueRepository, PointRepository pointRepository) {
+        this.queueRepository = queueRepository;
     }
 
 
     // 스케줄러 기반: 비활성화된 토큰 활성화
+    @Transactional
     public void activateTokens(int maxActiveTokens) {
         // 현재 활성화된 토큰 수를 가져오기
         int currentActiveTokens = queueRepository.countTokensByStatus("ACTIVE");
@@ -83,6 +84,7 @@ public class QueueService {
     /**
      * 만료된 대기열 항목 삭제
      */
+    @Transactional
     public void deleteByExpiresAtBefore() {
         queueRepository.deleteByExpiresAtBefore(LocalDateTime.now());
     }
@@ -111,45 +113,10 @@ public class QueueService {
         queueRepository.updateExpiresAt(token, expiresAt);
     }
 
-//
-//
-//
-//
-//    /**
-//     * 특정 토큰 ID로 대기열 항목 조회.
-//     * @param tokenId 토큰 ID
-//     * @return 대기열 항목 (Optional)
-//     */
-//    @Transactional
-//    public Optional<Queue> findQueueEntryByTokenId(String tokenId) {
-//        return queueRepository.findByTokenId(tokenId);
-//    }
-//
+
     public boolean isQueueActive(String token) {
         return queueRepository.existsByTokenIdAndStatus(token, "ACTIVE");
     }
-//
-//
-//
-//
-//    public void deleteByUserId(Long userId) {
-//        queueRepository.deleteByUserId(userId);
-//    }
-//
-//    public Optional<Queue> findByTokenId(String tokenId) {
-//        return queueRepository.findByTokenId(tokenId);
-//    }
-//
-//    public void deleteExpiredTokens(LocalDateTime now) {
-//    }
-//
-//    public boolean checkTokenExistence(String tokenId, String status) {
-//        return queueRepository.existsByTokenIdAndStatus(tokenId, status);
-//    }
-//
-//    public Optional<Queue> findQueueByTokenId(String activeToken) {
-//        return queueRepository.findByTokenId(activeToken);
-//    }
-//
+
 
 }

@@ -27,12 +27,15 @@ public class PaymentFacade {
      * @param reservationId 예약 ID
      * @throws IllegalArgumentException 결제가 이미 진행 중일 경우 예외 발생
      */
-    public void processPayment(Long userId, Long reservationId) {
+    public String processPayment(Long userId, Long reservationId) {
 
         // 결제 처리
         paymentService.processPayment(userId, reservationId);
 
         // 결제 완료 후 예약 상태 업데이트
         reservationService.updateReservationStatus(reservationId, "CONFIRMED");
+
+
+        return "결제 성공";
     }
 }

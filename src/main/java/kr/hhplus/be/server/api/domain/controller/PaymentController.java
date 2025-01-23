@@ -1,9 +1,12 @@
 package kr.hhplus.be.server.api.domain.controller;
 
+import kr.hhplus.be.server.api.domain.dto.PaymentRequest;
 import kr.hhplus.be.server.api.domain.usecase.PaymentFacade;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * PaymentController
@@ -23,14 +26,13 @@ public class PaymentController {
     /**
      * 결제 처리
      * - 사용자와 예약 정보를 기반으로 결제를 처리.
-     * @param userId 사용자 ID
-     * @param reservationId 예약 ID
+     * @param paymentRequest 사용자 ID와 예약 ID를 포함하는 PaymentRequest 객체
      * @return 결제 성공 또는 실패 메시지
      */
     @PostMapping("/process")
-    public ResponseEntity<String> processPayment(@RequestParam Long userId, @RequestParam Long reservationId) {
+    public ResponseEntity<String> processPayment(PaymentRequest paymentRequest) {
         try {
-            paymentFacade.processPayment(userId, reservationId);
+            paymentFacade.processPayment(paymentRequest.getUserId(), paymentRequest.getReservationId());
             return ResponseEntity.ok("결제 성공");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

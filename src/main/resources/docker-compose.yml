@@ -9,7 +9,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: password1!
       MYSQL_DATABASE: test
-      MYSQL_USER: minkyungchu
+      MYSQL_USER: root
       MYSQL_PASSWORD: password1!
     volumes:
       - db_data:/var/lib/mysql

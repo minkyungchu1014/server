@@ -2,6 +2,7 @@ package kr.hhplus.be.server.domain.models;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
+@NoArgsConstructor
 @Table(name = "payment")
 public class Payment {
 
@@ -16,11 +18,11 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JoinColumn(name = "reservation_id", nullable = false)
-    private Long reservationId;
-
     @JoinColumn(name = "user_id", nullable = false)
     private Long userId;
+
+    @JoinColumn(name = "reservation_id", nullable = false)
+    private Long reservationId;
 
     @Column(nullable = false)
     private Long amount;
@@ -43,5 +45,12 @@ public class Payment {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public Payment(Long userId, Long reservationId, Long amount, String status) {
+        this.userId = userId;
+        this.reservationId = reservationId;
+        this.amount = amount;
+        this.status = status;
     }
 }

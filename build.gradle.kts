@@ -45,6 +45,10 @@ dependencies {
 	annotationProcessor("org.projectlombok:lombok:1.18.28")
 
 	// Test
+	testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
+	testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
+	testImplementation("org.mockito:mockito-core:5.5.0")
+	testImplementation("org.mockito:mockito-junit-jupiter:5.5.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 	testImplementation("org.testcontainers:junit-jupiter")

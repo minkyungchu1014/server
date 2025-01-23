@@ -2,7 +2,10 @@ package kr.hhplus.be.server.domain.service;
 
 import jakarta.transaction.Transactional;
 import kr.hhplus.be.server.domain.models.Queue;
-import kr.hhplus.be.server.domain.repository.*;
+import kr.hhplus.be.server.domain.repository.PaymentRepository;
+import kr.hhplus.be.server.domain.repository.QueueRepository;
+import kr.hhplus.be.server.domain.repository.ReservationRepository;
+import kr.hhplus.be.server.domain.repository.SeatRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,9 +18,10 @@ public class ExpirationService {
     private final SeatRepository seatRepository;
     private final QueueRepository queueRepository;
     private final PaymentRepository paymentRepository;
+
     public ExpirationService(ReservationRepository reservationRepository,
                              SeatRepository seatRepository,
-                             QueueRepository queueRepository, PaymentRepository paymentRepository, TokenRepository tokenRepository) {
+                             QueueRepository queueRepository, PaymentRepository paymentRepository) {
         this.reservationRepository = reservationRepository;
         this.seatRepository = seatRepository;
         this.queueRepository = queueRepository;
