@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  database:
+    image: mysql:8.0
+    container_name: minkyungchu
+    ports:
+      - "3307:3306" # 로컬 포트:컨테이너 포트
+    environment:
+      MYSQL_ROOT_PASSWORD: password1!
+      MYSQL_DATABASE: test
+      MYSQL_USER: root
+      MYSQL_PASSWORD: password1!
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  db_data:
