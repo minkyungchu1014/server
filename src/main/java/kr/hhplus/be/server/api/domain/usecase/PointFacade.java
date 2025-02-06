@@ -1,10 +1,7 @@
 package kr.hhplus.be.server.api.domain.usecase;
 
-import kr.hhplus.be.server.api.domain.dto.TransactionHistoryResponse;
 import kr.hhplus.be.server.domain.service.PointService;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * PointFacade
@@ -38,6 +35,10 @@ public class PointFacade {
      */
     public Long getPoint(Long userId) {
         return pointService.getPoint(userId);
+    }
+
+    public void deductPoint(Long userId, Long amount) {
+        pointService.deductPoint(userId, amount, "포인트 사용");
     }
 
 }

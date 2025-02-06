@@ -14,23 +14,19 @@ public class QueueScheduler {
     }
 
     /**
-     * 배정 스케줄러: WAITING 상태의 토큰을 ACTIVE로 변경
-     * maxActiveTokens : 5
-     * 매 1분마다 실행
+     *  WAITING → ACTIVE로 변경 (1분마다 실행)
      */
-    @Scheduled(fixedRate = 60000) // 1분
+    @Scheduled(fixedRate = 60000)
     public void assignQueueTokens() {
         int maxActiveTokens = 5;
         queueService.activateTokens(maxActiveTokens);
     }
 
     /**
-     * 만료 스케줄러: 대기열(queue)에서 ACTIVE(30분) 등
-     * 오래된 WAITING 상태(1시간) 만료 처리
-     * 매 1분마다 실행
+     *  만료된 ACTIVE 토큰 삭제 (1분마다 실행)
      */
-    @Scheduled(fixedRate = 60000) // 1분
+    @Scheduled(fixedRate = 60000)
     public void expireQueueTokens() {
-        queueService.deleteByExpiresAtBefore();
+        queueService.removeExpiredActiveTokens();
     }
 }

@@ -26,8 +26,6 @@ public class TokenFacade {
      * @return 생성된 토큰 값
      */
     public String generateToken(Long userId) {
-        String token = tokenService.generateToken(userId); // 토큰 생성 및 대기열 추가
-        queueService.addToQueue(token, userId);
-        return token;
+        return tokenService.generateToken(userId);
     }
 }

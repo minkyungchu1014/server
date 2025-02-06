@@ -39,6 +39,13 @@ public class Reservation {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    public Reservation(Long userId) {
+        this.userId = userId;
+        this.seatId = 1L;  // 기본값 설정
+        this.concertScheduleId = 1L;  // 기본값 설정
+        this.status = "PENDING";  // 기본 상태 설정
+        this.expiresAt = LocalDateTime.now().plusMinutes(10);
+    }
 
     @PrePersist
     protected void onCreate() {
@@ -59,4 +66,5 @@ public class Reservation {
         this.status = status;
         this.expiresAt = expiresAt;
     }
+
 }

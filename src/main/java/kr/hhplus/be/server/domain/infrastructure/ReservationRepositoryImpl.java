@@ -124,5 +124,16 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
                 .executeUpdate();
     }
 
+    public void deleteExpiredReservations(LocalDateTime currentTime) {
+        String query = """
+        DELETE FROM Reservation r
+        WHERE r.expiresAt < :currentTime
+    """;
+
+        entityManager.createQuery(query)
+                .setParameter("currentTime", currentTime)
+                .executeUpdate();
+    }
+
 
 }

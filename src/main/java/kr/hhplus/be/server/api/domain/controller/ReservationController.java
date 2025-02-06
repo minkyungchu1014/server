@@ -21,6 +21,7 @@ public class ReservationController {
 
     /**
      * 예약 가능 날짜와 해당 날짜의 콘서트 및 스케줄 목록을 반환합니다.
+     *
      * @return 예약 가능한 날짜와 콘서트 목록 리스트
      */
     @GetMapping("/dates")
