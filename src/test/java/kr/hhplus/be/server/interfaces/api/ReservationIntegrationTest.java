@@ -53,8 +53,6 @@ public class ReservationIntegrationTest {
         registry.add("spring.datasource.url", mysqlContainer::getJdbcUrl);
         registry.add("spring.datasource.username", mysqlContainer::getUsername);
         registry.add("spring.datasource.password", mysqlContainer::getPassword);
-        registry.add("spring.redis.host", redisContainer::getHost);
-        registry.add("spring.redis.port", () -> redisContainer.getMappedPort(6379).toString());
     }
 
     @Autowired
@@ -146,5 +144,4 @@ public class ReservationIntegrationTest {
         assertThat(reservations).isPresent();
         assertThat(reservations.get().getUserId()).isNotNull();
     }
-
 }

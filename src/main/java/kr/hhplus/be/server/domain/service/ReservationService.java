@@ -78,11 +78,18 @@ public class ReservationService {
         seat.setReservedBy(userId);
         seatRepository.save(seat);
 
-        // ✅ 예약이 완료되었으므로 해당 날짜의 캐시 삭제
+        Reservation reservation = new Reservation();
+        reservation.setUserId(userId);
+        reservation.setSeatId(seatId);
+        reservation.setStatus("RESERVED");
+        reservation.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+
+        reservationRepository.save(reservation);
+
         String cacheKey = "availableSeats:" + seat.getConcertScheduleId();
         redisTemplate.delete(cacheKey);
 
-        return new Reservation(userId, seatId, seat.getConcertScheduleId(), "RESERVED", LocalDateTime.now().plusMinutes(5));
+        return reservation;
     }
 
 

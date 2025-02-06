@@ -7,11 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
-import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -19,16 +18,21 @@ import static org.mockito.Mockito.*;
 public class TokenServiceTest {
 
     @Mock
-    private TokenRepository tokenRepository; // Mock으로 변경
+    private TokenRepository tokenRepository;
 
     @InjectMocks
-    private TokenService tokenService; // Mock 객체 주입
+    private TokenService tokenService;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        Clock fixedClock = Clock.fixed(Instant.parse("2025-01-22T00:00:00Z"), ZoneId.of("UTC"));
-        LocalDateTime fixedNow = LocalDateTime.now(fixedClock);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     }
 
     @Test

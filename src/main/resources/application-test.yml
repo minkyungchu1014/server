@@ -26,7 +26,7 @@ spring:
         format_sql: true
   data:
     redis:
-      host: testcontainers-redis
+      host: my-redis
       port: 6379
 logging:
   level:
