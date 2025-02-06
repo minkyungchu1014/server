@@ -12,26 +12,29 @@ import kr.hhplus.be.server.domain.repository.ReservationRepository;
 import kr.hhplus.be.server.domain.repository.SeatRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 public class ReservationService {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
-
+    private final RedisTemplate<String, Object> redisTemplate;
     private final ReservationRepository reservationRepository;
     private final ConcertRepository concertRepository;
     private final ConcertScheduleRepository concertScheduleRepository;
     private final SeatRepository seatRepository;
     private final SeatService seatService;
 
-    public ReservationService(ReservationRepository reservationRepository, ConcertRepository concertRepository, ConcertScheduleRepository concertScheduleRepository, SeatRepository seatRepository, SeatService seatService) {
+    public ReservationService(RedisTemplate<String, Object> redisTemplate, ReservationRepository reservationRepository, ConcertRepository concertRepository, ConcertScheduleRepository concertScheduleRepository, SeatRepository seatRepository, SeatService seatService) {
+        this.redisTemplate = redisTemplate;
         this.reservationRepository = reservationRepository;
         this.concertRepository = concertRepository;
         this.concertScheduleRepository = concertScheduleRepository;
@@ -39,24 +42,42 @@ public class ReservationService {
         this.seatService = seatService;
     }
 
+    /**
+     * 특정 날짜의 예약 가능한 좌석 조회 (Redis 캐싱 적용)
+     */
+    public List<Seat> getAvailableSeatsByDate(String date) {
+        String cacheKey = "availableSeats:" + date;
+
+        List<Seat> cachedSeats = (List<Seat>) redisTemplate.opsForValue().get(cacheKey);
+        if (cachedSeats != null) {
+            return cachedSeats;
+        }
+
+            LocalDate targetDate = LocalDate.parse(date);
+        List<Long> scheduleIds = concertScheduleRepository.findScheduleIdsByDate(targetDate);
+        List<Seat> availableSeats = seatRepository.findAvailableSeatsByScheduleIds(scheduleIds);
+
+        // ✅ 캐싱 유지 시간 3분으로 변경
+        redisTemplate.opsForValue().set(cacheKey, availableSeats, 3, TimeUnit.MINUTES);
+        return availableSeats;
+    }
 
     /**
-     * 좌석을 예약합니다.
-     * @param userId 사용자 ID
-     * @param seatId 좌석 ID
+     * 좌석 예약 시 Redis 캐시 업데이트 (좌석 상태 변경)
      */
     @Transactional
     public Reservation reserveSeat(Long userId, Long seatId) {
+        Seat seat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 좌석이 존재하지 않습니다."));
 
-        // 1. 예약 상태 확인
-        Optional<Reservation> existingReservation = reservationRepository.findReservationWithLock(seatId);
-
-        if (existingReservation.isPresent() &&
-                ("RESERVED".equals(existingReservation.get().getStatus()) || "CONFIRMED".equals(existingReservation.get().getStatus()))) {
+        if (seat.getIsReserved()) {
             throw new IllegalArgumentException("이미 예약된 좌석입니다.");
         }
 
-        // 예약 객체 생성 및 저장
+        seat.setIsReserved(true);
+        seat.setReservedBy(userId);
+        seatRepository.save(seat);
+
         Reservation reservation = new Reservation();
         reservation.setUserId(userId);
         reservation.setSeatId(seatId);
@@ -65,8 +86,40 @@ public class ReservationService {
 
         reservationRepository.save(reservation);
 
+        String cacheKey = "availableSeats:" + seat.getConcertScheduleId();
+        redisTemplate.delete(cacheKey);
+
         return reservation;
     }
+
+
+//    /**
+//     * 좌석을 예약합니다.
+//     * @param userId 사용자 ID
+//     * @param seatId 좌석 ID
+//     */
+//    @Transactional
+//    public Reservation reserveSeat(Long userId, Long seatId) {
+//
+//        // 1. 예약 상태 확인
+//        Optional<Reservation> existingReservation = reservationRepository.findReservationWithLock(seatId);
+//
+//        if (existingReservation.isPresent() &&
+//                ("RESERVED".equals(existingReservation.get().getStatus()) || "CONFIRMED".equals(existingReservation.get().getStatus()))) {
+//            throw new IllegalArgumentException("이미 예약된 좌석입니다.");
+//        }
+//
+//        // 예약 객체 생성 및 저장
+//        Reservation reservation = new Reservation();
+//        reservation.setUserId(userId);
+//        reservation.setSeatId(seatId);
+//        reservation.setStatus("RESERVED");
+//        reservation.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+//
+//        reservationRepository.save(reservation);
+//
+//        return reservation;
+//    }
 
 
     // 예약 취소 처리
@@ -96,23 +149,23 @@ public class ReservationService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid concert ID: " + concertId));
     }
 
-    /**
-     * 특정 날짜의 예약 가능한 좌석 조회
-     * @param date 조회할 날짜
-     * @return 예약 가능한 좌석 리스트
-     */
-    public List<Seat> getAvailableSeatsByDate(String date) {
-        LocalDate bsdtDate = LocalDate.parse(date);
-        // 날짜에 해당하는 스케줄 ID 조회
-        List<Long> scheduleIds = concertScheduleRepository.findScheduleIdsByDate(bsdtDate);
-        // 해당 스케줄 ID들로 예약 가능한 좌석 조회
-        return seatRepository.findAvailableSeatsByScheduleIds(scheduleIds);
-    }
-
-    // 좌석 예약 여부 확인
-    public boolean isSeatReserved(Long seatId) {
-        return seatRepository.isSeatAvailable(seatId);
-    }
+//    /**
+//     * 특정 날짜의 예약 가능한 좌석 조회
+//     * @param date 조회할 날짜
+//     * @return 예약 가능한 좌석 리스트
+//     */
+//    public List<Seat> getAvailableSeatsByDate(String date) {
+//        LocalDate bsdtDate = LocalDate.parse(date);
+//        // 날짜에 해당하는 스케줄 ID 조회
+//        List<Long> scheduleIds = concertScheduleRepository.findScheduleIdsByDate(bsdtDate);
+//        // 해당 스케줄 ID들로 예약 가능한 좌석 조회
+//        return seatRepository.findAvailableSeatsByScheduleIds(scheduleIds);
+//    }
+//
+//    // 좌석 예약 여부 확인
+//    public boolean isSeatReserved(Long seatId) {
+//        return seatRepository.isSeatAvailable(seatId);
+//    }
 
     /**
      * 예약 가능한 날짜를 조회합니다.

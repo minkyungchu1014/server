@@ -13,7 +13,17 @@ public class PointResponse {
         this.message = message;
     }
 
-    public PointResponse(Long balance) {
+    public PointResponse(String message, Long balance) {
+        this.message = message;
         this.balance = balance;
+    }
+
+    // Getter 추가
+    public String getMessage() {
+        return message;
+    }
+
+    public Long getBalance() {
+        return balance;
     }
 }

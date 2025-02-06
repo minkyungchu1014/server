@@ -1,123 +1,67 @@
 package kr.hhplus.be.server.domain.repository;
 
-import kr.hhplus.be.server.api.domain.dto.QueueStatusResponse;
-import kr.hhplus.be.server.domain.models.Queue;
 import kr.hhplus.be.server.domain.service.QueueService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 
-import java.awt.print.Pageable;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class QueueServiceTest {
-
-    @Container
-    private static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("test")
-            .withUsername("minkyungchu")
-            .withPassword("password1!");
-
-    @DynamicPropertySource
-    static void setProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mysqlContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", mysqlContainer::getUsername);
-        registry.add("spring.datasource.password", mysqlContainer::getPassword);
-    }
 
     @InjectMocks
     private QueueService queueService;
 
     @Mock
-    private QueueRepository queueRepository;
+    private RedisTemplate<String, String> redisTemplate;
+
+    @Mock
+    private ZSetOperations<String, String> zSetOperations;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testActivateTokens() {
-        int maxActiveTokens = 5;
-        when(queueRepository.countTokensByStatus("ACTIVE")).thenReturn(2);
-        when(queueRepository.findTokensByStatusWaiting((Pageable) PageRequest.of(0, 3))).thenReturn(List.of("token1", "token2", "token3"));
-
-        queueService.activateTokens(maxActiveTokens);
-
-        verify(queueRepository, times(1)).countTokensByStatus("ACTIVE");
-        verify(queueRepository, times(1)).findTokensByStatusWaiting((Pageable) PageRequest.of(0, 3));
-        verify(queueRepository, times(3)).updateStatusAndExpiresAtForWaitingTokens(anyString(), eq("ACTIVE"), any(LocalDateTime.class));
-    }
-
-    @Test
-    void testGetQueueStatusByToken() {
-        String tokenId = "testToken";
-        Queue queue = new Queue();
-        queue.setTokenId(tokenId);
-        queue.setStatus("WAITING");
-        queue.setExpiresAt(LocalDateTime.now());
-        when(queueRepository.findByTokenId(tokenId)).thenReturn(Optional.of(queue));
-        when(queueRepository.getQueuePosition(tokenId)).thenReturn(1L);
-
-        QueueStatusResponse response = queueService.getQueueStatusByToken(tokenId);
-
-        assertEquals(tokenId, response.getTokenId());
-        assertEquals("WAITING", response.getStatus());
-        assertNotNull(response.getExpiresAt());
-        assertEquals(1L, response.getQueuePosition());
-        verify(queueRepository, times(1)).findByTokenId(tokenId);
-        verify(queueRepository, times(1)).getQueuePosition(tokenId);
-    }
-
-    @Test
-    void testDeleteByExpiresAtBefore() {
-        queueService.deleteByExpiresAtBefore();
-
-        verify(queueRepository, times(1)).deleteByExpiresAtBefore(any(LocalDateTime.class));
+        when(redisTemplate.opsForZSet()).thenReturn(zSetOperations);
     }
 
     @Test
     void testAddToQueue() {
         String tokenId = "testToken";
         Long userId = 1L;
-        when(queueRepository.existsByTokenId(tokenId)).thenReturn(false);
+        String value = userId + ":WAITING:" + tokenId;
+        long expiresAt = System.currentTimeMillis() + (30 * 60 * 1000);
 
         queueService.addToQueue(tokenId, userId);
 
-        verify(queueRepository, times(1)).existsByTokenId(tokenId);
-        verify(queueRepository, times(1)).save(any(Queue.class));
+        verify(zSetOperations, times(1)).add("queue:users", value, expiresAt);
     }
 
     @Test
-    void testUpdateQueueStatus() {
-        String token = "testToken";
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(30);
+    void testActivateTokens() {
+        Set<String> mockUsers = Set.of("1:WAITING:testToken");
 
-        queueService.updateQueueStatus(token, expiresAt);
+        when(zSetOperations.range("queue:users", 0, -1)).thenReturn(mockUsers);
 
-        verify(queueRepository, times(1)).updateExpiresAt(token, expiresAt);
+        queueService.activateTokens(1);
+
+        verify(zSetOperations, times(1)).remove("queue:users", "1:WAITING:testToken");
+        verify(zSetOperations, times(1)).add(anyString(), anyString(), anyDouble());
     }
 
     @Test
-    void testIsQueueActive() {
-        String token = "testToken";
-        when(queueRepository.existsByTokenIdAndStatus(token, "ACTIVE")).thenReturn(true);
+    void testDeleteByExpiresAtBefore() {
+        Set<String> expiredUsers = Set.of("1:WAITING:testToken");
 
-        boolean isActive = queueService.isQueueActive(token);
+        when(zSetOperations.rangeByScore("queue:users", 0, System.currentTimeMillis())).thenReturn(expiredUsers);
 
-        assertTrue(isActive);
-        verify(queueRepository, times(1)).existsByTokenIdAndStatus(token, "ACTIVE");
+        queueService.deleteByExpiresAtBefore();
+
+        verify(zSetOperations, times(1)).remove("queue:users", "1:WAITING:testToken");
     }
 }

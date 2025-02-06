@@ -55,6 +55,10 @@ dependencies {
 	testImplementation("org.testcontainers:mysql")
 	testImplementation("io.rest-assured:rest-assured")
 	testImplementation("org.testcontainers:jdbc:1.19.3")
+	// Redis
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+	implementation("org.springframework.boot:spring-boot-starter-cache")
+	implementation("org.springframework.session:spring-session-data-redis")
 }
 
 tasks.withType<JavaCompile> {

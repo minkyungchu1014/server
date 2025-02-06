@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.domain.repository;
 
 import kr.hhplus.be.server.domain.models.Reservation;
+import kr.hhplus.be.server.domain.models.Seat;
 import kr.hhplus.be.server.domain.service.ReservationService;
 import kr.hhplus.be.server.domain.service.SeatService;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +28,12 @@ public class ReservationServiceTest {
 
     @Mock
     private SeatService seatService;
+
+    @Mock
+    private SeatRepository seatRepository;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
 
     @BeforeEach
     void setUp() {
@@ -80,17 +88,31 @@ public class ReservationServiceTest {
         Long userId = 1L;
         Long seatId = 1L;
 
-        when(reservationRepository.findReservationWithLock(seatId)).thenReturn(Optional.empty());
+        Seat seat = new Seat();
+        seat.setId(seatId);
+        seat.setIsReserved(false);
+
+        when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
+
+        Reservation reservation = new Reservation();
+        reservation.setUserId(userId);
+        reservation.setSeatId(seatId);
+        reservation.setStatus("RESERVED");
+        reservation.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+
+        when(reservationRepository.save(any(Reservation.class))).thenReturn(reservation);
 
         // Act
-        Reservation reservation = reservationService.reserveSeat(userId, seatId);
+        Reservation result = reservationService.reserveSeat(userId, seatId);
 
         // Assert
-        assertThat(reservation).isNotNull();
-        assertThat(reservation.getUserId()).isEqualTo(userId);
-        assertThat(reservation.getSeatId()).isEqualTo(seatId);
-        assertThat(reservation.getStatus()).isEqualTo("RESERVED");
+        assertThat(result).isNotNull();
+        assertThat(result.getUserId()).isEqualTo(userId);
+        assertThat(result.getSeatId()).isEqualTo(seatId);
+        assertThat(result.getStatus()).isEqualTo("RESERVED");
+        verify(seatRepository).save(seat);
         verify(reservationRepository).save(any(Reservation.class));
+        verify(redisTemplate).delete("availableSeats:" + seat.getConcertScheduleId());
     }
 
     @Test
@@ -99,11 +121,11 @@ public class ReservationServiceTest {
         Long userId = 1L;
         Long seatId = 1L;
 
-        Reservation existingReservation = new Reservation();
-        existingReservation.setSeatId(seatId);
-        existingReservation.setStatus("RESERVED");
+        Seat seat = new Seat();
+        seat.setId(seatId);
+        seat.setIsReserved(true);
 
-        when(reservationRepository.findReservationWithLock(seatId)).thenReturn(Optional.of(existingReservation));
+        when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
 
         // Act & Assert
         try {
@@ -114,7 +136,6 @@ public class ReservationServiceTest {
 
         verify(reservationRepository, never()).save(any(Reservation.class));
     }
-
 
     @Test
     void testCancelReservation_Failure_AlreadyCancelled() {
@@ -128,7 +149,6 @@ public class ReservationServiceTest {
 
         when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
 
-        // Act & Assert
         try {
             reservationService.cancelReservation(reservationId);
         } catch (IllegalArgumentException e) {
@@ -137,5 +157,4 @@ public class ReservationServiceTest {
 
         verify(reservationRepository, never()).save(any(Reservation.class));
     }
-
 }

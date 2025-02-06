@@ -47,4 +47,5 @@ public interface ReservationRepositoryCustom {
     @Modifying
     int updateStatusById(Long id, String status);
 
+    void deleteExpiredReservations(LocalDateTime currentTime);
 }
