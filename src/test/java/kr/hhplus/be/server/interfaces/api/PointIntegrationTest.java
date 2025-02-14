@@ -2,8 +2,10 @@ package kr.hhplus.be.server.interfaces.api;
 
 import kr.hhplus.be.server.domain.models.Point;
 import kr.hhplus.be.server.domain.models.PointHistory;
+import kr.hhplus.be.server.domain.models.User;
 import kr.hhplus.be.server.domain.repository.PointHistoryRepository;
 import kr.hhplus.be.server.domain.repository.PointRepository;
+import kr.hhplus.be.server.domain.repository.UserRepository;
 import kr.hhplus.be.server.domain.service.PointService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -67,20 +71,47 @@ public class PointIntegrationTest {
     @Autowired
     private PointService pointService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     private final Long userId = 1L;
+
+    private static final String TEST_TOKEN = "Bearer TEST_TOKEN";
+
+    private HttpHeaders headers;
 
     @BeforeEach
     public void setUp() {
+        userRepository.deleteAll();
         pointRepository.deleteAll();
+
+        User user = new User("Test User");
+        user = userRepository.save(user);
+        userRepository.flush();
+
         Point point = new Point();
-        point.setId(userId);
         point.setTotal(100L);
+        point.setUser(user);
         pointRepository.save(point);
+        pointRepository.flush();
+
+        headers = new HttpHeaders();
+        headers.set("Authorization", TEST_TOKEN);
     }
+
 
     @Test
     void testGetPoint_Success() {
-        ResponseEntity<Long> response = restTemplate.getForEntity("/api/point/" + userId, Long.class);
+        headers.set("Authorization", TEST_TOKEN);
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+//        ResponseEntity<Long> response = restTemplate.exchange(
+//                "/api/point/" + userId, HttpMethod.GET, requestEntity, Long.class
+//        );
+        ResponseEntity<String> response = restTemplate.getForEntity("/api/point/" + userId, String.class);
+        System.out.println("Response Body: " + response.getBody());
+        System.out.println("Response Body: " + response.getBody());
+
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(100L);
     }

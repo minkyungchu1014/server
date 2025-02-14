@@ -57,7 +57,7 @@ public class ReservationService {
         List<Long> scheduleIds = concertScheduleRepository.findScheduleIdsByDate(targetDate);
         List<Seat> availableSeats = seatRepository.findAvailableSeatsByScheduleIds(scheduleIds);
 
-        // ✅ 캐싱 유지 시간 3분으로 변경
+        // 캐싱 유지 시간 3분으로 변경
         redisTemplate.opsForValue().set(cacheKey, availableSeats, 3, TimeUnit.MINUTES);
         return availableSeats;
     }

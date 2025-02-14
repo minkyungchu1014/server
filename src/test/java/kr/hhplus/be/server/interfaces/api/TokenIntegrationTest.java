@@ -1,16 +1,19 @@
 package kr.hhplus.be.server.interfaces.api;
 
 import kr.hhplus.be.server.domain.models.User;
+import kr.hhplus.be.server.domain.repository.RedisRepository;
 import kr.hhplus.be.server.domain.repository.TokenRepository;
 import kr.hhplus.be.server.domain.repository.UserRepository;
 import kr.hhplus.be.server.domain.service.TokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -29,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -68,33 +72,43 @@ public class TokenIntegrationTest {
     @Autowired
     private TokenRepository tokenRepository;
 
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+    @Mock
+    private RedisRepository redisRepository;
 
     private Long userId;
     private Clock fixedClock;
+    private HttpHeaders headers;
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
+
         User user = new User();
         user.setName("testUser");
         user = userRepository.save(user);
         userId = user.getId();
 
-        // 고정된 Clock 객체 생성 (현재 시간을 특정 시점으로 고정)
         fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+
+        headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer TEST_TOKEN");
     }
 
     @Test
     void testGenerateToken_Success() {
+        // Arrange
         Long userId = userRepository.save(new User("testUser")).getId();
+        when(redisRepository.getValue(anyString())).thenReturn("WAIT");
+
+        // Act
         ResponseEntity<String> response = restTemplate.postForEntity("/api/token/generate?userId=" + userId, null, String.class);
 
+        // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         String token = response.getBody();
         assertThat(token).isNotNull();
         assertThat(tokenRepository.existsByToken(token)).isTrue();
-        assertThat(redisTemplate.opsForValue().get(token)).isEqualTo("WAIT");
+        verify(redisRepository).setValue(eq(token), eq("WAIT"), anyLong(), any());
     }
 
     @Test
@@ -105,6 +119,8 @@ public class TokenIntegrationTest {
 
         for (int i = 0; i < threadCount; i++) {
             final Long userId = userRepository.save(new User("testUser-" + i)).getId();
+            when(redisRepository.getValue(anyString())).thenReturn("WAIT");
+
             executorService.submit(() -> {
                 try {
                     ResponseEntity<String> response = restTemplate.postForEntity("/api/token/generate?userId=" + userId, null, String.class);
@@ -119,6 +135,6 @@ public class TokenIntegrationTest {
         executorService.shutdown();
 
         assertThat(tokenRepository.count()).isEqualTo(threadCount);
-        tokenRepository.findAll().forEach(token -> assertThat(redisTemplate.opsForValue().get(token.getToken())).isEqualTo("WAIT"));
+        tokenRepository.findAll().forEach(token -> verify(redisRepository).setValue(eq(token.getToken()), eq("WAIT"), anyLong(), any()));
     }
 }

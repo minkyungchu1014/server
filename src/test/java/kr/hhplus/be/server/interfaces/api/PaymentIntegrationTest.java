@@ -83,18 +83,19 @@ public class PaymentIntegrationTest {
 
     private Long userId;
     private Long reservationId;
+    private HttpHeaders headers;
 
     @BeforeEach
     public void setUp() {
         paymentRepository.deleteAll();
 
-        // ✅ 사용자 및 예약 데이터 동적 생성
+        // 사용자 및 예약 데이터 동적 생성
         User user = new User();
         user.setName("testUser");
         user = userRepository.save(user);
         userId = user.getId();
 
-        // ✅ 예약 객체 생성 시 필수 필드 설정 추가
+        // 예약 객체 생성 시 필수 필드 설정 추가
         Reservation reservation = Reservation.builder()
                 .userId(userId)
                 .seatId(1L)  // 임시 값 설정
@@ -104,6 +105,9 @@ public class PaymentIntegrationTest {
                 .build();
         reservation = reservationRepository.save(reservation);
         reservationId = reservation.getId();
+
+        headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer TEST_TOKEN");
     }
 
 
