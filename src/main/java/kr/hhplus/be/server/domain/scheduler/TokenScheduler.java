@@ -13,11 +13,10 @@ public class TokenScheduler {
         this.tokenService = tokenService;
     }
 
-
-    /** 토큰 테이블에서
-     * 1분마다 만료된 토큰 삭제(토큰 보관 주기 : 1년)
+    /**
+     * 토큰 테이블에서 1시간마다 만료된 토큰 삭제
      */
-    @Scheduled(fixedRate = 60000) //
+    @Scheduled(fixedRate = 3600000) // 1시간(3,600,000ms)마다 실행
     public void deleteByExpiresAtBefore() {
         tokenService.deleteByExpiresAtBefore();
     }

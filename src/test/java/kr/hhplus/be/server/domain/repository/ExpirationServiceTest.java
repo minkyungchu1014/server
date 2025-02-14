@@ -21,6 +21,9 @@ public class ExpirationServiceTest {
     @Mock
     private QueueRepository queueRepository;
 
+    @Mock
+    private RedisRepository redisRepository;
+
     @InjectMocks
     private ExpirationService expirationService;
 
@@ -32,21 +35,17 @@ public class ExpirationServiceTest {
         MockitoAnnotations.openMocks(this);
     }
 
-
     @Test
     public void testProcessExpiredReservationsAndTokens() {
-        // Arrange
         LocalDateTime currentTime = LocalDateTime.now();
 
         when(queueRepository.findByStatusAndExpiresAtBefore(eq("ACTIVE"), any(LocalDateTime.class)))
                 .thenReturn(Collections.emptyList());
 
-        // Act
         expirationService.processExpiredReservationsAndTokens();
 
         // Assert
         verify(queueRepository).findByStatusAndExpiresAtBefore(eq("ACTIVE"), any(LocalDateTime.class));
         verifyNoMoreInteractions(queueRepository);
     }
-
 }

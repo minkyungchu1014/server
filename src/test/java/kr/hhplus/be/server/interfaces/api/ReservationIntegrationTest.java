@@ -4,18 +4,20 @@ import kr.hhplus.be.server.api.domain.usecase.ReservationFacade;
 import kr.hhplus.be.server.domain.models.Reservation;
 import kr.hhplus.be.server.domain.models.Seat;
 import kr.hhplus.be.server.domain.models.User;
+import kr.hhplus.be.server.domain.repository.RedisRepository;
 import kr.hhplus.be.server.domain.repository.ReservationRepository;
 import kr.hhplus.be.server.domain.repository.SeatRepository;
 import kr.hhplus.be.server.domain.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -31,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -70,15 +73,19 @@ public class ReservationIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+    @Mock
+    private RedisRepository redisRepository;
 
     private Long seatId;
 
+    private HttpHeaders headers;
+
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
+
         Seat seat = new Seat();
-        seat.setConcertScheduleId(1L); // 테스트용 스케줄 ID (실제 스케줄과 연결 필요)
+        seat.setConcertScheduleId(1L);
         seat.setSeatNumber(1);
         seat.setPrice(75000L);
         seat.setIsReserved(false);
@@ -87,7 +94,8 @@ public class ReservationIntegrationTest {
         Seat savedSeat = seatRepository.save(seat);
         seatId = savedSeat.getId();
 
-        redisTemplate.delete("seat:reserved:" + seatId); // Redis 초기화
+        headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer TEST_TOKEN");
     }
 
     @DisplayName("같은 좌석에 대해 동시에 10명이 예약 요청하는 경우, 1명만 성공하고 나머지는 실패한다.")
@@ -106,21 +114,20 @@ public class ReservationIntegrationTest {
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failureCount = new AtomicInteger(0);
 
-        ValueOperations<String, String> redisOps = redisTemplate.opsForValue();
-
         for (int i = 0; i < totalUsers; i++) {
             String userIdStr = "user" + (i + 1);
 
             executor.submit(() -> {
                 try {
-                    boolean isReserved = redisOps.setIfAbsent("seat:reserved:" + seatId, userIdStr);
+                    boolean isReserved = true;
+                    when(redisRepository.getValue("seat:reserved:" + seatId)).thenReturn(null);
+                    redisRepository.setValue("seat:reserved:" + seatId, userIdStr, 5, java.util.concurrent.TimeUnit.MINUTES);
 
                     if (isReserved) {
                         reservationFacade.reserveSeat("valid-token", Long.valueOf(userIdStr.replace("user", "")), seatId);
                         successCount.incrementAndGet();
 
-                        // ✅ 좌석이 예약되었으면 Redis 캐시 삭제
-                        redisTemplate.delete("seat:reserved:" + seatId);
+                        redisRepository.removeFromQueue("seat:reserved:" + seatId, userIdStr);
                     } else {
                         failureCount.incrementAndGet();
                     }
@@ -135,11 +142,9 @@ public class ReservationIntegrationTest {
         latch.await();
         executor.shutdown();
 
-        // 한 명만 성공해야 함
         assertThat(successCount.get()).isOne();
         assertThat(failureCount.get()).isEqualTo(totalUsers - 1);
 
-        // 실제 DB에 저장된 사용자 ID 검증 추가
         Optional<Reservation> reservations = reservationRepository.findBySeatId(seatId);
         assertThat(reservations).isPresent();
         assertThat(reservations.get().getUserId()).isNotNull();
